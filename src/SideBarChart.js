@@ -9,7 +9,7 @@ import scale from 'd3-scale';
 
 
 
-class BarChart extends Component {
+class SideBarChart extends Component {
   
   constructor() {
     super();
@@ -53,16 +53,28 @@ class BarChart extends Component {
     
     var info = Array(571);
     var margin = 50;
+    var margin = {top: 20, right: 20, bottom: 30, left: 100},
+      width = 960 - margin.left - margin.right,
+      height = 1050 - margin.top - margin.bottom;
     
     //console.log(info);
     //const info = [12, 5, 6, 8, 3];
-    const svg = d3.select("#root").append("svg").attr("width", 1500).attr("height", 500);
+    //const svg = d3.select("#root").append("svg").attr("width", width).attr("height", height);
     
+    var svg = d3.select("#root").append("svg")
+              .attr("width", width + margin.left + margin.right)
+              .attr("height", height + margin.top + margin.bottom)
+              .append("g")
+              .attr("transform", 
+                    "translate(" + margin.left + "," + margin.top + ")");
 
-    var x = d3.scaleBand()
-            .range([0, 1000])
-            .domain(data.map(function(d) {return d.key;}))
-            .padding(0.2);
+
+    data.sort((a,b) => {
+      return a.value-b.value;
+    })
+
+    var x = d3.scaleLinear()
+            .range([0, 1000]);
     
     
 
@@ -72,9 +84,12 @@ class BarChart extends Component {
 
 
 
-    var y = d3.scaleLinear()
-              .domain([0, 200])
-              .range([420, 0]);
+    var y = d3.scaleBand()
+              .range([1000, 0])
+              .padding(0.1);
+
+    x.domain([0, d3.max(data, function(d){ return d.value; })]);
+    y.domain(data.map(function(d) { return d.key}));
 
     
     var bars = svg.selectAll('.bar')
@@ -85,21 +100,21 @@ class BarChart extends Component {
 
     bars.append("rect")
         .attr("class", "bar")
-        .attr("x", (d, i) => (i * 10) + margin)
-        .attr("y", (d, i) => 420 - (d.value * 0.5)) // 300 is height, can be made more dynamic with variables, state to hold info
-        .attr("width", 4)
-        .attr("height", (d, i) => {
-          return d.value * 0.5;
-        })
-        .attr("fill", function(d) {return color(d.key)});
+        .attr("x", 0)
+        .attr("y", (d, i) => {return y(d.key)}) // 300 is height, can be made more dynamic with variables, state to hold info
+        .attr("width", (d) => {return x(d.value)})
+        .attr("height", y.bandwidth())
+        .attr("fill", function(d) {return color(d.key)})
+        .on("click", (d, i) => {
+          console.log(d);
+        });
 
-    bars.append("text")
-        .attr("class", "label")
-        .text((d) => {
-          return d.key;
-        })
-        .attr("font-size", "4px")
-        .attr("transform", (d,i) => { return "translate( " + (((i * 10) - 3) + margin) + ", 470)rotate(-75)"});
+    svg.append("g").attr("transform", "translate(0," + height + ")").call(d3.axisBottom(x));
+
+    svg.append("g").call(d3.axisLeft(y)).attr("font-size", "6px");
+
+    /*
+    
     
     bars
         .append("text")
@@ -110,7 +125,7 @@ class BarChart extends Component {
         .attr("x", (d,i) => ((i * 10) - 2) + margin)
         .attr("y", (d,i) => 420 - (d.value * 0.5) - 10)
         .attr("font-size", "4px");
-
+      */
     /*
     var x = d3.scaleBand()
             .range([0, 1000])
@@ -172,14 +187,14 @@ class BarChart extends Component {
 
   render() {
     return (
-      <div id="BarChart">
+      <div id="SideBarChart">
         
       </div>
     )     
   }
 }
 
-export default BarChart;
+export default SideBarChart;
 
 
 
