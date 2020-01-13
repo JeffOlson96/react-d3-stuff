@@ -6,6 +6,8 @@ import * as d3 from 'd3';
 import rd3 from 'react-d3-library';
 import BarChart from "./BarChart.js";
 import PieChart from "./PieChart.js";
+import SideBarChart from "./SideBarChart.js";
+import AudioComponent from "./AudioComponent.js";
 
 
 
@@ -25,19 +27,22 @@ class PBIApp extends Component {
   render() {
     return (
       <div id="Full">
-        <div id="Bar">
-          <BarChart/>
-        </div>
-        <div id="Pie">
-          <PieChart/>
-        </div>
+          <PieChart/>     
       </div>
     )     
   }
 }
 
-export default PBIApp;
 
+/*
+<SideBarChart/>
+<div id="Pie">
+          <PieChart/>
+        </div>
+
+<AudioComponent/>
+*/
+export default PBIApp;
 
 
 
