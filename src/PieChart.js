@@ -15,7 +15,8 @@ class BarChart extends Component {
     super();
 
     this.state = {
-      data: []
+      data: [],
+      depth: 0
     };
     this.drawChart = this.drawChart.bind(this);
     
@@ -30,11 +31,15 @@ class BarChart extends Component {
           .key(function(d) {
             return d["DEPARTMENT DESCRIPTION"];
           })
+          .key(function(d) {
+            return d["NAME"];
+          })
           .rollup(function(d) {
             return d3.sum(d, function(v) {
               return v["TIME ENTERED"];
             });
-          }).entries(data);
+          })
+          .entries(data);
 
 
       /* old, for regular processing, fullData
@@ -67,12 +72,26 @@ class BarChart extends Component {
       dubSend.forEach((d,i) => {
         d.children = [];
         send.forEach((v) => {
+          //console.log(v);
           if (v.baseDept === d.key) {
             d.children.push(v);
           }
         })
       });
       
+      dubSend.forEach((d) => {
+        var totVal = 0;
+        //console.log(d);
+        d.children.forEach((child) => {
+          child.value = 0;
+          child.values.forEach((grandchild) => {
+            //console.log(grandchild);
+            child.value += grandchild.value;
+            totVal += grandchild.value;
+          })
+        })
+        d.value = totVal;
+      });
       scope.setState({data: dubSend});
       scope.drawChart(dubSend);
     });
@@ -80,10 +99,12 @@ class BarChart extends Component {
   }
   
   drawChart(data) {
+    console.log(this.state);
     console.log(data);
-    var info = data;
+    
     var scope = this;    
     var radius = Math.min(1000, 400) / 2;
+    //var depth = 0;
     
 
     var color = d3.scaleOrdinal()
@@ -94,10 +115,14 @@ class BarChart extends Component {
           .outerRadius(radius - 10)
           .innerRadius(radius - 70);
 
+    var labelArc = d3.arc()
+      .outerRadius(radius - 10)
+      .innerRadius(radius - 70);
+
 
     var pie = d3.pie()
           .sort(null)
-          .value(function(d) {
+          .value((d) => {
             return d.value;
           });
 
@@ -113,9 +138,19 @@ class BarChart extends Component {
     svg.append("text")
         .style("text-anchor", "middle")
         .text("BACK")
-        .on("click", function(d) {
-          d3.select("svg").remove();
-          scope.drawChart(scope.state.data);
+        .on("click", function(d, i) {
+          var curDepth = scope.state.depth;
+          if (curDepth === 1) {
+            scope.setState({depth: curDepth-=1});
+            d3.select("svg").remove();
+            scope.drawChart(scope.state.data);
+          }
+          else if (curDepth === 2) {
+            scope.setState({depth: curDepth-=1});
+            d3.select("svg").remove();
+            console.log("Check: ", scope.state.data);
+            //scope.drawChart(scope.state.data.children[i]);
+          }
         });
 
     // g groups for holding data
@@ -128,13 +163,24 @@ class BarChart extends Component {
     g.append("path")
         .attr("d", arc)
         .style("fill", function(d) {
-          return color(d.data.key);
+          if (d.data) {
+            return color(d.data.key);
+          }
+          else if (d.key) {
+            return color(d.key);
+          }
+          
         })
         .on("click", function(d) {
-          //console.log("CLICKval: ", arc.centroid(d));
+          console.log("CLICKval: ", d);
+          scope.setState({depth: scope.state.depth+=1});
           if (d.data.children) {
             d3.select("svg").remove();
             scope.drawChart(d.data.children);
+          }
+          else if (d.data.values) {
+            d3.select("svg").remove();
+            scope.drawChart(d.data.values);
           }
         })
         .on("mouseover", function(d) {
@@ -145,13 +191,16 @@ class BarChart extends Component {
             .attr('class', 'val')
             .attr("transform", function() {
               let coord = arc.centroid(d);
+              coord[0] *= 0.90;
+              coord[1] *= 0.90;
               return "translate(" + coord + ")";
             })
             .text(function() {
               return Math.ceil(d.data.value) + " hrs";
             })
-            .attr("font-size", "10px")
-            .style("text-anchor", "middle");
+            .attr("font-size", "9px")
+            .style("text-anchor", "middle")
+            .style("font-weight", "lighter");
         })
         .on("mouseout", function(d) {
           d3.select(this)
@@ -160,27 +209,90 @@ class BarChart extends Component {
             return color(d.data.key);
           });
           d3.selectAll('.val').remove();
-        })
+        });
 
-    // append texts appropriately 
+    // append texts appropriately
+    /*
     g.append("text")
         .attr("transform", function(d, i) {
           //console.log(arc.centroid(d), " : ", d);
-          
           let coord = arc.centroid(d);
           coord[0] *= 1.40;
           coord[1] *= 1.40;
-          //return "translate(" + coord + ")";
+          return "translate(" + coord +")";
           
-          return "translate(" + coord +")"; 
         })
         .attr("dy", ".35em")
         .style("text-anchor", "middle")
         .text(function(d) {
-          return d.data.key;
+          if (d.data) {
+            return d.data.key;
+          }
+          else if (d.key) {
+            return d.key;
+          }
         })
-        .attr("font-size", "6px");   
+        .attr("font-size", "8px");   
+        */
+    
+    /* DOES THE SAME THING ^^ BUT HAS MATH BEHIND arc.centroid */
+    g.append("text")
+        .attr("text-anchor", "middle")
+        .attr("x", function(d) {
+          var a = d.startAngle + (d.endAngle - d.startAngle)/2 - Math.PI/2;
+          d.cx = Math.cos(a) * (radius - 45);
+          return d.x = Math.cos(a) * (radius + 30);
+        })
+        .attr("y", function(d) {
+          var b = d.startAngle + (d.endAngle - d.startAngle)/2 - Math.PI/2;
+          d.cy = Math.sin(b) * (radius - 45);
+          return d.y = Math.sin(b) * (radius + 30);
+        })
+        .text(function(d) {
+          var curAngle = d.endAngle - d.startAngle;
+          if (curAngle > 0.07) { 
+            d.textSet = true;
+            if (d.data) {
+              return d.data.key;
+            }
+            else if (d.key) {
+              return d.key;
+            }
+          }
+          
+        })
+        .each(function(d) {
+          var box = this.getBBox();
+          d.sx = d.x - box.width/2 - 2;
+          d.ox = d.x + box.width/2 + 2;
+          d.sy = d.oy = d.y + 5;
+        })
+        .attr("font-size", "7px");
+        /*
+        .attr("transform", function(d) { 
+          var midAngle = d.endAngle < Math.PI ? d.startAngle/2 + d.endAngle/2 : d.startAngle/2  + d.endAngle/2 + Math.PI ;
+          return "translate(" + labelArc.centroid(d)[0] + "," + labelArc.centroid(d)[1] + ") rotate(" + (midAngle * 180/Math.PI) + ")"; })
+        .attr("dy", ".35em");
+        */
+    
 
+    g.append("path")
+      .attr("class", "pointer")
+      .style("fill", "none")
+      .style("stroke", "black")
+      .attr("d", function(d) {
+        //console.log(d);
+        if (d.textSet === true) {
+          if (d.cx > d.ox) {
+            return "M" + d.sx + "," + d.sy + "L" + d.ox + "," + d.oy + " " + d.cx + "," + d.cy;
+          }
+          else {
+            return "M" + d.ox + "," + d.oy + "L" + d.sx + "," + d.sy + " " + d.cx + "," + d.cy;
+          }
+        }
+      })
+      .style("opacity", 0.5);
+      
   }
 
   render() {
