@@ -21,31 +21,11 @@ class BarChart extends Component {
     
   }
   componentDidMount() {
-    var FullData = new Array();
-    var scope = this;
-
-    d3.csv(res).then(function(data) {
-      //console.log(data);
-      var send = d3.nest()
-          .key(function(d) {
-            return d["DEPARTMENT DESCRIPTION"];
-          })
-          .rollup(function(d) {
-            return d3.sum(d, function(v) {
-              return v["TIME ENTERED"];
-            });
-          }).entries(data);
-
-      /*
-      data.forEach((val, idx) => {
-        if (val["DEPARTMENT DESCRIPTION"] !== "EH Employees:") {
-          FullData.push(val);
-        }
-      });
-      */
-      scope.drawChart(send);
-    });
     
+    this.setState({data: this.props.data});
+  }
+  componentDidUpdate() {
+    this.drawChart(this.props.data);
   }
   
   drawChart(data) {
@@ -56,25 +36,24 @@ class BarChart extends Component {
     
     //console.log(info);
     //const info = [12, 5, 6, 8, 3];
-    const svg = d3.select("#root").append("svg").attr("width", 1500).attr("height", 500);
+    const svg = d3.select("#root").append("svg").attr("width", 1500).attr("height", 800);
     
-
+    // using scale band for bars
     var x = d3.scaleBand()
             .range([0, 1000])
             .domain(data.map(function(d) {return d.key;}))
             .padding(0.2);
     
     
-
+    // scale Ordinal is helpful for colors
     var color = d3.scaleOrdinal()
               .domain(data)
               .range(d3.schemeSet3);
 
 
-
+    // y = mx + b
     var y = d3.scaleLinear()
-              .domain([0, 200])
-              .range([420, 0]);
+              .range([0, 1500]);
 
     
     var bars = svg.selectAll('.bar')
@@ -86,10 +65,10 @@ class BarChart extends Component {
     bars.append("rect")
         .attr("class", "bar")
         .attr("x", (d, i) => (i * 10) + margin)
-        .attr("y", (d, i) => 420 - (d.value * 0.5)) // 300 is height, can be made more dynamic with variables, state to hold info
-        .attr("width", 4)
+        .attr("y", (d, i) => 650 - (d.value * 0.2)) // 300 is height, can be made more dynamic with variables, state to hold info
+        .attr("width", 7)
         .attr("height", (d, i) => {
-          return d.value * 0.5;
+          return d.value * 0.2;
         })
         .attr("fill", function(d) {return color(d.key)});
 
@@ -99,7 +78,7 @@ class BarChart extends Component {
           return d.key;
         })
         .attr("font-size", "4px")
-        .attr("transform", (d,i) => { return "translate( " + (((i * 10) - 3) + margin) + ", 470)rotate(-75)"});
+        .attr("transform", (d,i) => { return "translate( " + (((i * 10) + 2) + margin) + ", 670)rotate(-75)"});
     
     bars
         .append("text")
@@ -108,7 +87,7 @@ class BarChart extends Component {
           return d.value;
         })
         .attr("x", (d,i) => ((i * 10) - 2) + margin)
-        .attr("y", (d,i) => 420 - (d.value * 0.5) - 10)
+        .attr("y", (d,i) => 650 - (d.value * 0.2) - 10)
         .attr("font-size", "4px");
 
     /*
@@ -172,7 +151,7 @@ class BarChart extends Component {
 
   render() {
     return (
-      <div id="BarChart">
+      <div id="BarContainer">
         
       </div>
     )     
