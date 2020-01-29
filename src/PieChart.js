@@ -17,7 +17,7 @@ class PieChart extends Component {
     this.state = {
       data: [],
       depth: 0,
-      saveIdx: 0
+      clicked: null
     };
     this.drawChart = this.drawChart.bind(this);
     
@@ -25,23 +25,29 @@ class PieChart extends Component {
 
   componentDidMount() {
     
-    this.setState({data: this.props.data});
+    //console.log("PIE DidMount");
+    this.setState((props) => ({data: this.props.data}));
+    this.drawChart(this.props.data);
+  }
+  componentDidUpdate(prevProps, prevState) {
+    if (prevProps.data !== this.props.data) {
+      this.setState((props) => ({data: this.props.data}));
+      d3.selectAll(".pie").remove();
+      this.drawChart(this.props.data);
+    }
     
   }
-  componentDidUpdate() {
-    //console.log(this.props.data);
-    //
-    this.drawChart(this.props.data);
+  componentWillUnmount() {
+    d3.selectAll(".pie").remove();
+    //console.log("PIE unmounting");
   }
   
   drawChart(data) {
-    //this.setState({data: this.props.data});
-    this.state.data = this.props.data;
-    console.log("state: ", this.state);
-    console.log("Beg: ", data);
+    //console.log("Beg: ", data, " : ", this.state.depth);
+
     if (data.length > 0) {
       var scope = this;    
-      var radius = Math.min(1000, 500) / 2;
+      var radius = Math.min(700, 400) / 2;
       //var depth = 0;
       
 
@@ -68,32 +74,17 @@ class PieChart extends Component {
       const svg = d3.select("#container")
             .append("svg")
             .attr("class", "pie")
-            .attr("width", 1000)
-            .attr("height", 600)
+            .attr("width", 700)
+            .attr("height", 500)
             .append("g")
-            .attr("transform", "translate(" + 500 + "," + 300 + ")");
+            .attr("transform", "translate(" + 350 + "," + 250 + ")");
       
       // back button in the middle
       svg.append("text")
           .style("text-anchor", "middle")
           .text("BACK")
           .on("click", function(d, i) {
-            var curDepth = scope.state.depth;
-            //scope.props.onChangeValue(d);
-            
-            if (curDepth === 1) {
-              scope.setState({depth: curDepth-=1});
-              d3.selectAll(".pie").remove();
-              scope.drawChart(scope.state.data);
-            }
-            else if (curDepth === 2) {
-              let idx = scope.state.saveIdx;
-              scope.setState({depth: curDepth-=2});
-              d3.selectAll(".pie").remove();
-              //console.log("Check: ", scope.state.data[idx]);
-              scope.drawChart(scope.state.data);
-            }
-            
+            scope.props.onChangeValue(scope.state.clicked.parent);
           });
 
       // g groups for holding data
@@ -106,20 +97,23 @@ class PieChart extends Component {
       g.append("path")
           .attr("d", arc)
           .style("fill", function(d) {
+            d.parent = data;
+            //console.log(d); 
             if (d.data) {
               return color(d.data.key);
             }
             else if (d.key) {
               return color(d.key);
             }
-            
           })
           .on("click", function(d, i) {
-            console.log("CLICKval: ", d);
+            //console.log("CLICKval: ", d);
+            
+            d3.selectAll(".pie").remove();
             scope.props.onChangeValue(d);
-            scope.setState({depth: scope.state.depth+=1});
-            if (scope.state.depth < 2) {
-              scope.setState({saveIdx: i});
+            scope.setState({depth: scope.state.depth+=1, clicked: d});
+            if (scope.state.depth > 2) {
+              scope.setState({depth: 0});
             }
             if (d.data.children) {
               d3.selectAll(".pie").remove();
@@ -158,29 +152,7 @@ class PieChart extends Component {
             d3.selectAll('.val').remove();
           });
 
-      // append texts appropriately
-      /*
-      g.append("text")
-          .attr("transform", function(d, i) {
-            //console.log(arc.centroid(d), " : ", d);
-            let coord = arc.centroid(d);
-            coord[0] *= 1.40;
-            coord[1] *= 1.40;
-            return "translate(" + coord +")";
-            
-          })
-          .attr("dy", ".35em")
-          .style("text-anchor", "middle")
-          .text(function(d) {
-            if (d.data) {
-              return d.data.key;
-            }
-            else if (d.key) {
-              return d.key;
-            }
-          })
-          .attr("font-size", "8px");   
-          */
+      // append texts appropriately  
       
       /* DOES THE SAME THING ^^ BUT HAS MATH BEHIND arc.centroid */
       g.append("text")
@@ -245,7 +217,7 @@ class PieChart extends Component {
 
   render() {
     return (
-      <div id="container" onChange={this.props.onChangeValue}>
+      <div id="container">
         
       </div>
     )     

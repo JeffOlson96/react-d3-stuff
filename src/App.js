@@ -20,6 +20,7 @@ class PBIApp extends Component {
 
     this.state = {
       data: [],
+      send: [],
       depth: 0,
       saveIdx: 0
     };
@@ -97,38 +98,50 @@ class PBIApp extends Component {
         })
         d.value = totVal;
       });
-      scope.setState({data: dubSend});
-      //console.log(scope.state.data);
-      //scope.drawChart(dubSend);
-      //scope.props.render(scope.state.data);
+      scope.setState({data: dubSend, send: dubSend});      
     });
     
   }
   
   handleDataChange = (e) => {
     console.log("Changing: ", e);
-    this.setState({data: e.data});
+    
+    if (e === this.state.send || e.data === this.state.send) {
+      //console.log("caught");
+      this.setState({send: this.state.data});
+    }
+    else {
+      if (e.data) {
+        this.setState({send: e.data});
+      }
+      else if (e.length > 0) {
+        this.setState({send: e});
+      }
+    }
+    
+    //console.log("after: ", this.state.data);
   }
 
   
   render() {
-    //console.log(this.state.data);
+    //console.log("App Render: ", this.state.send);
+    var d = this.state.send;
     return (
-      <div id="Full">
-        {this.state.data ?
+      <div id="Full" width="500">
+        {this.state.send ?
           <PieChart 
-            data={this.state.data}
+            data={d}
             onChangeValue={this.handleDataChange}
           />
           : null
         }
-        {this.state.data ?
-          <SideBarChart 
-            data={this.state.data}
+        {this.state.send ?
+          <BarChart 
+            data={d}
             onChangeValue={this.handleDataChange}
           />
           : null
-        }
+        } 
       </div>
     )     
   }
@@ -136,6 +149,14 @@ class PBIApp extends Component {
 
 
 /*
+{this.state.send ?
+          <SideBarChart 
+            data={d}
+            onChangeValue={this.handleDataChange}
+          />
+          : null
+        }
+
 <Sunburst/>
 
 
